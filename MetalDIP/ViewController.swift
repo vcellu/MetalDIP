@@ -19,12 +19,12 @@ class ViewController: NSViewController {
     super.viewDidLoad()
     // Do any additional setup after loading the view.
     device = MTLCreateSystemDefaultDevice()
-    metalView = MTKView(frame: CGRect.zero, device: device)
+    metalView = MTKView(frame: self.view.frame, device: device)
     
     guard let metalView = metalView else { return }
     guard let device = device else { return }
-    
-    self.view = metalView
+    self.view.addSubview(metalView)
+    metalView.autoresizingMask = [.height, .width]
     renderer = Renderer(view: metalView, device: device)
   }
 
