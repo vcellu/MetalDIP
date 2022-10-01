@@ -9,9 +9,10 @@ import Foundation
 import MetalKit
 
 class Renderer : NSObject, MTKViewDelegate {
- 
+  
   private var metalView: MTKView
   private var vertextBuffer: MTLBuffer?
+  private var indexBuffer: MTLBuffer?
   private var commandQueue: MTLCommandQueue?
   private var pipelineState: MTLRenderPipelineState?
   private let pipelineDesc = MTLRenderPipelineDescriptor()
@@ -21,11 +22,19 @@ class Renderer : NSObject, MTKViewDelegate {
     commandQueue = device.makeCommandQueue()
     
     // Create our vertex data
-    let vertices = [Vertex(color: [1, 0, 0, 1], pos: [-1, -1]),
-                    Vertex(color: [0, 1, 0, 1], pos: [0, 1]),
-                    Vertex(color: [0, 0, 1, 1], pos: [1, -1])]
+    let vertices = [Vertex(color: [1, 0, 0, 1], pos: [-1, 1]),
+                    Vertex(color: [0, 1, 0, 1], pos: [1, 1]),
+                    Vertex(color: [0, 0, 1, 1], pos: [-1, -1]),
+                    Vertex(color: [1, 0, 0, 1], pos: [1, -1]),
+    ]
+    
+    let indices:[UInt16] = [
+      0, 3, 2,
+      0, 1, 3
+    ]
     
     vertextBuffer = device.makeBuffer(bytes: vertices, length: vertices.count * MemoryLayout<Vertex>.stride)
+    indexBuffer = device.makeBuffer(bytes: indices, length: indices.count * MemoryLayout<UInt16>.stride)
     super.init()
     metalView.delegate = self
     metalView.enableSetNeedsDisplay = true
@@ -41,7 +50,7 @@ class Renderer : NSObject, MTKViewDelegate {
       print("can't create pipeline \(error)")
     }
   }
-    
+  
   func draw(in view: MTKView) {
     guard
       let commandQueue = commandQueue,
@@ -49,10 +58,10 @@ class Renderer : NSObject, MTKViewDelegate {
       let commandBuffer = commandQueue.makeCommandBuffer(),
       let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderDescriptor),
       let drawable = view.currentDrawable
-      else {
-        return
-      }
-   
+    else {
+      return
+    }
+    
     update(commandEncoder)
     
     commandEncoder.endEncoding()
@@ -63,9 +72,10 @@ class Renderer : NSObject, MTKViewDelegate {
   
   func update(_ encoder: MTLRenderCommandEncoder) {
     guard let pipelineState = pipelineState else { return }
+    guard let indexBuffer = indexBuffer else { return }
     encoder.setRenderPipelineState(pipelineState)
     encoder.setVertexBuffer(vertextBuffer, offset: 0, index: 0)
-    encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
+    encoder.drawIndexedPrimitives(type: .triangle, indexCount: 6, indexType: .uint16, indexBuffer: indexBuffer, indexBufferOffset: 0)
   }
   
   func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
